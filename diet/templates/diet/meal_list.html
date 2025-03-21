@@ -1,0 +1,13 @@
+
+{% block content %}
+  <h1>My Meals</h1>
+  <a href="{% url 'diet:create_meal' %}">Add New Meal</a>
+  <ul>
+    {% for meal in meals %}
+      <li>
+        <a href="{% url 'diet:meal_detail' meal.meal_id %}">{{ meal.food_name }} ({{ meal.meal_type }})</a>
+        - {{ meal.date }} {{ meal.time }}
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

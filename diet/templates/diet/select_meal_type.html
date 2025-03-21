@@ -1,0 +1,10 @@
+<h1>Select Meal Type</h1>
+<ul>
+    {% for meal_type in meal_types %}
+        <li>
+            <a href="{% url 'diet:select_food' %}?meal_type={{ meal_type }}">{{ meal_type|title }}</a>
+        </li>
+    {% endfor %}
+</ul>
+
+

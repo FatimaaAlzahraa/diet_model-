@@ -1,0 +1,12 @@
+<!-- templates/diet/meal_detail.html -->
+
+<h1>{{ meal.food_name.name }} ({{ meal.meal_type }})</h1>
+<p>Portion Size: {{ meal.portion_size }} grams</p>
+<p>Calories: {{ meal.calories }}</p>
+<p>Fat: {{ meal.fat }}g</p>
+<p>Carbohydrates: {{ meal.carbohydrates }}g</p>
+<p>Protein: {{ meal.protein }}g</p>
+<a href="{% url 'diet:update_meal' meal.meal_id %}">Edit</a>
+<a href="{% url 'diet:delete_meal' meal.meal_id %}">Delete</a>
+<a href="{% url 'diet:meal_list' %}">Back to List</a>
+

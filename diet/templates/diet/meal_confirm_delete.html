@@ -1,0 +1,9 @@
+<!-- templates/diet/meal_confirm_delete.html -->
+
+<h1>Confirm Meal Deletion</h1>
+<p>Are you sure you want to delete this meal?</p>
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit">Yes, Delete</button>
+    <a href="{% url 'diet:meal_list' %}">Cancel</a>
+</form>

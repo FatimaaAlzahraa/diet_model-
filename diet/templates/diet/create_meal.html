@@ -1,0 +1,11 @@
+<h1>Create Meal for {{ food.name }} ({{ meal_type }})</h1>
+<form method="POST">
+    {% csrf_token %}
+    <label for="portion_size">Portion Size:</label>
+    <input type="number" name="portion_size" min="1" value="100"><br>
+    
+    <button type="submit">Create Meal</button>
+</form>
+
+
+
