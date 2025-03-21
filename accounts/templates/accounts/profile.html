@@ -1,0 +1,54 @@
+
+{% block body %}
+    <!-- bradcam_area  -->
+    <div class="bradcam_area bradcam_bg_1">
+        <div class="container">
+            <div class="row">
+                <div class="col-xl-12">
+                    <div class="bradcam_text">
+                        <h3>{{job}}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--/ bradcam_area  -->
+
+    <div class="job_details_area">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="job_sumary">
+                        <div class="summery_header">
+                            <h3>profile Summery</h3>
+                        </div>
+                        <div class="job_content">
+                            <ul>
+                                <li>Image: <span> {{profile.image}} </span></li>
+                                <li>gender: <span> {{profile.gender}} </span></li>
+                                <li>first name: <span> {{profile.user.first_name}} </span></li>
+                                <li>last name: <span> {{profile.user.last_name}} </span></li>
+                                <li>username: <span>{{profile}}</span></li>
+                                <li>age: <span> {{profile.age}} </span></li>
+                                <li>email: <span> {{profile.user.email}} </span></li>
+                                <li>phone: <span> {{profile.phone_number}} </span></li>
+                                <li>diabetes tybe: <span>{{profile.diabetes_type}}</span></li>
+                                <li>therapy: <span> {{profile.therapy}} </span></li>
+                                <li>weight: <span> {{profile.weight}} </span></li>
+                                <li>height: <span> {{profile.height}} </span></li>
+                            </ul>                        </div>
+                    </div>
+                    <div>
+                        <a href="{% url 'accounts:profile_edit' %}"><input type="submit" value="Edit Profile"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if not user.is_authenticated %}
+    <script>
+        {{ redirect_to_login_immediately }}
+    </script>
+    {% endif %}
+
+{% endblock body %}
