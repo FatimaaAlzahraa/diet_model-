@@ -1,9 +1,14 @@
 # diet/serializers.py
 
-# diet/serializers.py
 
 from rest_framework import serializers
-from .models import Food, Meal
+from .models import Food, Meal, StepHistory
+
+# Serializer for StepHistory model
+class StepHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StepHistory
+        fields = ['user', 'steps', 'calories_burned', 'date']
 
 class FoodSerializer(serializers.ModelSerializer):
     class Meta:

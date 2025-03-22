@@ -7,8 +7,9 @@ from django.db.models import Q, Sum
 from django.utils import timezone
 from decimal import Decimal
 from drf_yasg.utils import swagger_auto_schema
-from .models import Food, Meal
-from .serializers import FoodSerializer, MealSerializer
+from .models import Food, Meal , StepHistory
+from django.utils import timezone
+from .serializers import FoodSerializer, MealSerializer , StepHistorySerializer
 
 # 1- Retrieve a list of all available meal types
 @swagger_auto_schema(method='get', responses={200: 'List of available meal types'})
@@ -133,8 +134,54 @@ def get_meal(request, meal_id ):
 
     # serializer = MealSerializer(meal, many=True)
     # return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 6- Retrieve the list of foods consumed grouped by day.  
+@swagger_auto_schema(method='get', responses={200: MealSerializer(many=True)})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_foods_by_day(request):
+    """Retrieve the list of foods consumed by the authenticated user, grouped by day."""
     
-# 6- Update an existing meal
+    # Get the 'date' query parameter, if provided
+    date_str = request.GET.get('date', None)
+    if date_str:
+        try:
+            # Parse the date string to a datetime object
+            date = timezone.datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        # If no date is provided, default to today's date
+        date = timezone.now().date()
+    
+    # Fetch meals for the specific date
+    meals = Meal.objects.filter(user=request.user, date=date)
+    
+    # Group meals by meal type
+    meal_groups = {
+        "breakfast": [],
+        "lunch": [],
+        "dinner": [],
+        "snack": []
+    }
+
+    for meal in meals:
+        meal_data = {
+            "id": meal.meal_id,
+            "food_name": meal.food_name.name,
+            "portion_size": meal.portion_size,
+            "calories": meal.calories,
+            "protein": meal.protein,
+            "carbohydrates": meal.carbohydrates,
+            "fat": meal.fat,
+            "sugars": meal.sugars,
+        }
+        meal_groups[meal.meal_type].append(meal_data)
+
+    return Response(meal_groups, status=status.HTTP_200_OK)
+
+# 7- Update an existing meal
 @swagger_auto_schema(method='put', request_body=MealSerializer, responses={200: MealSerializer})
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -164,7 +211,7 @@ def update_meal(request, meal_id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# 7- Delete an existing meal
+# 8- Delete an existing meal
 @swagger_auto_schema(method='delete', responses={204: 'No Content'})
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -179,25 +226,71 @@ def delete_meal(request, meal_id):
         return Response({"error": "Meal not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
-# 8- Retrieve calorie info (total consumed and remaining for the day)
-@swagger_auto_schema(method='get', responses={200: 'Total calories consumed and remaining for the day.'})
+# 9- Retrieve calorie info (total consumed and remaining for the day)
+@swagger_auto_schema(method='get', responses={200: 'Total calories consumed, burned, and remaining for the day.'})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_calorie_info(request):
-    """Retrieve the total calories consumed and remaining calories for the day."""
+    """Retrieve the total calories consumed, burned, and remaining calories for the day."""
     
+    # Get total calories consumed from meals
     total_calories_consumed = Meal.objects.filter(
         user=request.user, 
         date=timezone.now().date()
     ).aggregate(total_calories=Sum('calories'))['total_calories'] or Decimal('0.0')
 
-    user_profile = request.user.profile  
-    daily_calorie_goal = user_profile.daily_calorie_goal  
-    remaining_calories = daily_calorie_goal - total_calories_consumed
+    # Get total steps taken today
+    total_steps = StepHistory.objects.filter(
+        user=request.user, 
+        date=timezone.now().date()
+    ).aggregate(total_steps=Sum('steps'))['total_steps'] or 0
+    
+    # Calculate calories burned based on steps (0.04 calories per step as an example)
+    calories_burned_from_steps = total_steps * 0.04  # Assuming 0.04 calories burned per step
+    calories_burned_from_steps = Decimal(calories_burned_from_steps)
+    
+    # Get user's daily calorie goal from profile
+    user_profile = request.user.profile
+    daily_calorie_goal = user_profile.daily_calorie_goal  # Automatically calculated in profile
+    remaining_calories = daily_calorie_goal - total_calories_consumed + calories_burned_from_steps
 
     return Response({
         'total_calories_consumed': str(total_calories_consumed),
+        'calories_burned_from_steps': str(calories_burned_from_steps),
         'remaining_calories': str(remaining_calories),
     }, status=status.HTTP_200_OK)
 
+@swagger_auto_schema(method='post', request_body=StepHistorySerializer, responses={201: StepHistorySerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def record_steps(request):
+    """Record the steps taken by the user and calculate calories burned."""
+    
+    data = request.data
+    steps = data.get('steps')
 
+    if steps is None:
+        return Response({'error': 'Steps are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create StepHistory object
+    step_history = StepHistory.objects.create(
+        user=request.user,
+        steps=steps,
+    )
+
+    # Return the created object with calories burned
+    serializer = StepHistorySerializer(step_history)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@swagger_auto_schema(method='get', responses={200: StepHistorySerializer(many=True)})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_step_history(request):
+    """Retrieve the history of steps and calories burned by the user."""
+    
+    # Fetch step history for the authenticated user
+    step_history = StepHistory.objects.filter(user=request.user).order_by('-date')
+
+    serializer = StepHistorySerializer(step_history, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

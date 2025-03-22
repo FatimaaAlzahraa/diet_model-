@@ -6,6 +6,24 @@ import os
 from django.conf import settings
 import csv
 
+class StepHistory(models.Model):
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    steps = models.IntegerField()
+    calories_burned = models.DecimalField(max_digits=5, decimal_places=2)
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - {self.steps} steps"
+
+    def calculate_calories_burned(self):
+        calories_burned = self.steps * 0.04  
+        return Decimal(calories_burned)
+
+    def save(self, *args, **kwargs):
+        self.calories_burned = self.calculate_calories_burned()
+        super().save(*args, **kwargs)
+
+
 class Food(models.Model):
     name = models.CharField(max_length=255)
     calories = models.DecimalField(max_digits=6, decimal_places=2, default=0)

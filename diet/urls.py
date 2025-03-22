@@ -14,6 +14,8 @@ urlpatterns = [
     path('<int:meal_id>/update/', views.update_meal, name='update_meal'),
     path('<int:meal_id>/delete/', views.delete_meal, name='meal_delete'),
     path('calorie-info/', views.get_calorie_info, name='get_calorie_info'),
+    path('record_steps/', views.record_steps, name='record_steps'),
+    path('step_history/', views.get_step_history, name='get_step_history'),
     # path('', include('diet.formss.urls')),
 ]
 

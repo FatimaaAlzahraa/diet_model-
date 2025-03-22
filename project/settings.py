@@ -65,11 +65,11 @@ INSTALLED_APPS = [
 
     # MY_APPS
     
-    'diabetis',
+    # 'diabetis',
     'diet' ,
-    'footcare',
-    'medication' ,
-    'chatbot',
+    # 'footcare',
+    # 'medication' ,
+    # 'chatbot',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
