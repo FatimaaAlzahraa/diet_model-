@@ -225,8 +225,43 @@ def delete_meal(request, meal_id):
     except Meal.DoesNotExist:
         return Response({"error": "Meal not found."}, status=status.HTTP_404_NOT_FOUND)
 
+#9. Create an API to receive step data from the fluter app:
+@swagger_auto_schema(method='post', request_body=StepHistorySerializer, responses={201: StepHistorySerializer})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def record_steps(request):
+    """Record the steps taken by the user and calculate calories burned."""
+    
+    data = request.data
+    steps = data.get('steps')
 
-# 9- Retrieve calorie info (total consumed and remaining for the day)
+    if steps is None:
+        return Response({'error': 'Steps are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create StepHistory object
+    step_history = StepHistory.objects.create(
+        user=request.user,
+        steps=steps,
+    )
+
+    # Return the created object with calories burned
+    serializer = StepHistorySerializer(step_history)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#10.an API to view your step history and calories burned:
+@swagger_auto_schema(method='get', responses={200: StepHistorySerializer(many=True)})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_step_history(request):
+    """Retrieve the history of steps and calories burned by the user."""
+    
+    # Fetch step history for the authenticated user
+    step_history = StepHistory.objects.filter(user=request.user).order_by('-date')
+
+    serializer = StepHistorySerializer(step_history, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+# 11- Retrieve calorie info (total consumed and remaining for the day)
 @swagger_auto_schema(method='get', responses={200: 'Total calories consumed, burned, and remaining for the day.'})
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -252,45 +287,14 @@ def get_calorie_info(request):
     # Get user's daily calorie goal from profile
     user_profile = request.user.profile
     daily_calorie_goal = user_profile.daily_calorie_goal  # Automatically calculated in profile
+    
+    # Calculate remaining calories: goal - consumed + burned calories
     remaining_calories = daily_calorie_goal - total_calories_consumed + calories_burned_from_steps
 
+    # Prepare the response with all relevant calorie information
     return Response({
-        'total_calories_consumed': str(total_calories_consumed),
-        'calories_burned_from_steps': str(calories_burned_from_steps),
-        'remaining_calories': str(remaining_calories),
+        'calorie_goal': str(daily_calorie_goal),  # Daily calorie goal
+        'total_calories_consumed': str(total_calories_consumed),  # Total calories consumed today
+        'calories_burned_from_steps': str(calories_burned_from_steps),  # Calories burned from steps
+        'remaining_calories': str(remaining_calories),  # Remaining calories for the day
     }, status=status.HTTP_200_OK)
-
-@swagger_auto_schema(method='post', request_body=StepHistorySerializer, responses={201: StepHistorySerializer})
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def record_steps(request):
-    """Record the steps taken by the user and calculate calories burned."""
-    
-    data = request.data
-    steps = data.get('steps')
-
-    if steps is None:
-        return Response({'error': 'Steps are required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Create StepHistory object
-    step_history = StepHistory.objects.create(
-        user=request.user,
-        steps=steps,
-    )
-
-    # Return the created object with calories burned
-    serializer = StepHistorySerializer(step_history)
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-@swagger_auto_schema(method='get', responses={200: StepHistorySerializer(many=True)})
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_step_history(request):
-    """Retrieve the history of steps and calories burned by the user."""
-    
-    # Fetch step history for the authenticated user
-    step_history = StepHistory.objects.filter(user=request.user).order_by('-date')
-
-    serializer = StepHistorySerializer(step_history, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
